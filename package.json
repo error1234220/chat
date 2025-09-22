@@ -2,9 +2,9 @@
   "name": "real-time-chat-app",
   "version": "1.0.0",
   "description": "A real-time chat application with Node.js and Socket.IO.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
