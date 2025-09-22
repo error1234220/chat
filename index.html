@@ -163,7 +163,7 @@
     const typingIndicator = document.getElementById('typing-indicator');
 
     let username;
-    while (!username) {
+    while (!username || username.trim() === "") {
       username = prompt("Please enter your name");
     }
     socket.emit('new user', username);
@@ -180,10 +180,14 @@
     let typingTimer;
     input.addEventListener('input', () => {
       clearTimeout(typingTimer);
-      socket.emit('typing');
-      typingTimer = setTimeout(() => {
+      if (input.value) {
+        socket.emit('typing');
+        typingTimer = setTimeout(() => {
+          socket.emit('stop typing');
+        }, 2000); // Stop typing after 2 seconds of inactivity
+      } else {
         socket.emit('stop typing');
-      }, 2000); // Stop typing after 2 seconds of inactivity
+      }
     });
 
     const addSystemMessage = (text) => {
