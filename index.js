@@ -7,8 +7,11 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// This serves the static files from the public directory
-app.use(express.static(path.join(__dirname)));
+// --- CRITICAL FIX ---
+// This tells Express to serve the index.html file for the homepage.
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // This object will store the usernames associated with each socket ID
 const users = {};
@@ -27,14 +30,16 @@ io.on('connection', (socket) => {
 
   // Event for when a new chat message is sent
   socket.on('chat message', (msg) => {
+    const senderUsername = users[socket.id] || 'Anonymous';
     // Broadcast the message to everyone, including the sender
-    io.emit('chat message', { user: users[socket.id], msg: msg });
+    io.emit('chat message', { user: senderUsername, msg: msg });
   });
 
   // Event for when a user is typing
   socket.on('typing', () => {
+    const typingUser = users[socket.id] || 'Someone';
     // Broadcast to other users that this user is typing
-    socket.broadcast.emit('typing', users[socket.id]);
+    socket.broadcast.emit('typing', typingUser);
   });
 
   // Event for when a user stops typing
