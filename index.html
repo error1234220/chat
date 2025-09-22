@@ -1,30 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Real-Time Chat</title>
   <style>
-    body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-    #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-    #input:focus { outline: none; }
-    #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-    #messages { list-style-type: none; margin: 0; padding: 0; }
-    #messages > li { padding: 0.5rem 1rem; }
-    #messages > li:nth-child(odd) { background: #efefef; }
-    #user-list { position: fixed; top: 0; right: 0; width: 200px; background: #f7f7f7; height: 100%; padding: 1rem; border-left: 1px solid #ddd; }
-    #typing-indicator { position: fixed; bottom: 3.5rem; left: 1rem; font-style: italic; color: #888; }
+    :root {
+      --primary-bg: #1a1a1d;
+      --secondary-bg: #2a2a2e;
+      --text-color: #c5c6c7;
+      --accent-color: #61dafb;
+      --border-color: #444;
+      --system-message-color: #888;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--primary-bg);
+      color: var(--text-color);
+      display: flex;
+    }
+
+    #chat-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding: 1rem;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    #messages li {
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 10px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    #messages li.message {
+      background: var(--secondary-bg);
+      align-self: flex-start;
+    }
+
+    #messages li.message strong {
+      color: var(--accent-color);
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    #messages li.system-message {
+      text-align: center;
+      color: var(--system-message-color);
+      font-style: italic;
+    }
+
+    #form {
+      background: var(--secondary-bg);
+      padding: 0.5rem 1rem;
+      display: flex;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+    }
+
+    #input {
+      border: none;
+      padding: 0.75rem 1rem;
+      flex-grow: 1;
+      border-radius: 2rem;
+      margin-right: 0.5rem;
+      background-color: #3c3c43;
+      color: var(--text-color);
+    }
+
+    #input:focus {
+      outline: 2px solid var(--accent-color);
+    }
+
+    #form > button {
+      background: var(--accent-color);
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 2rem;
+      outline: none;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    #form > button:hover {
+      background-color: #88eaff;
+    }
+
+    #user-list-container {
+      width: 250px;
+      background: var(--secondary-bg);
+      height: 100vh;
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    #user-list-container h3 {
+      padding: 1rem;
+      margin: 0;
+      border-bottom: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--accent-color);
+    }
+    
+    #users {
+      list-style-type: none;
+      padding: 1rem;
+      margin: 0;
+      overflow-y: auto;
+    }
+
+    #users li {
+      padding: 0.5rem 0;
+    }
+
+    #typing-indicator {
+      height: 20px;
+      padding: 0 1rem;
+      font-style: italic;
+      color: var(--system-message-color);
+    }
   </style>
 </head>
 <body>
-  <ul id="messages"></ul>
-  <div id="user-list">
+
+  <div id="chat-container">
+    <ul id="messages"></ul>
+    <div id="typing-indicator"></div>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button>Send</button>
+    </form>
+  </div>
+
+  <div id="user-list-container">
     <h3>Users Online</h3>
     <ul id="users"></ul>
   </div>
-  <div id="typing-indicator"></div>
-  <form id="form" action="">
-    <input id="input" autocomplete="off" /><button>Send</button>
-  </form>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -35,10 +162,11 @@
     const usersList = document.getElementById('users');
     const typingIndicator = document.getElementById('typing-indicator');
 
-    let username = prompt("Please enter your name");
-    if (username) {
-      socket.emit('new user', username);
+    let username;
+    while (!username) {
+      username = prompt("Please enter your name");
     }
+    socket.emit('new user', username);
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -48,32 +176,42 @@
         socket.emit('stop typing');
       }
     });
-
+    
+    let typingTimer;
     input.addEventListener('input', () => {
-      if (input.value) {
-        socket.emit('typing');
-      } else {
+      clearTimeout(typingTimer);
+      socket.emit('typing');
+      typingTimer = setTimeout(() => {
         socket.emit('stop typing');
-      }
+      }, 2000); // Stop typing after 2 seconds of inactivity
     });
 
+    const addSystemMessage = (text) => {
+        const item = document.createElement('li');
+        item.textContent = text;
+        item.classList.add('system-message');
+        messages.appendChild(item);
+        scrollToBottom();
+    };
+    
+    const scrollToBottom = () => {
+        messages.scrollTop = messages.scrollHeight;
+    };
+    
     socket.on('chat message', (data) => {
       const item = document.createElement('li');
-      item.textContent = `${data.user}: ${data.msg}`;
+      item.classList.add('message');
+      item.innerHTML = `<strong>${data.user}</strong>${data.msg}`;
       messages.appendChild(item);
-      window.scrollTo(0, document.body.scrollHeight);
+      scrollToBottom();
     });
 
     socket.on('user connected', (username) => {
-      const item = document.createElement('li');
-      item.textContent = `${username} has joined the chat.`;
-      messages.appendChild(item);
+      addSystemMessage(`${username} has joined the chat.`);
     });
 
     socket.on('user disconnected', (username) => {
-      const item = document.createElement('li');
-      item.textContent = `${username} has left the chat.`;
-      messages.appendChild(item);
+      addSystemMessage(`${username} has left the chat.`);
     });
 
     socket.on('user list', (users) => {
