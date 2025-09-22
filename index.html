@@ -184,7 +184,7 @@
         socket.emit('typing');
         typingTimer = setTimeout(() => {
           socket.emit('stop typing');
-        }, 2000); // Stop typing after 2 seconds of inactivity
+        }, 2000);
       } else {
         socket.emit('stop typing');
       }
